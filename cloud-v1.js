@@ -49,7 +49,7 @@ async function profileFor(authUser){
 async function signIn(email,password){
  const {data,error}=await client.auth.signInWithPassword({email:String(email||'').trim().toLowerCase(),password:String(password||'')});
  if(error)throw error;
- const profile=await profileFor(data.user);
+ let profile;try{profile=await profileFor(data.user)}catch(e){await client.auth.signOut();throw e}
  if(window.BPlusAuth)window.BPlusAuth.set(profile.user,false);
  localStorage.setItem('bplus_cloud_required','1');
  return profile;
