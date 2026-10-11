@@ -133,6 +133,10 @@ async function initialize(callbacks){
  if(error)throw error;
  const session=data?.session;
  if(!session){
+  const local=window.BPlusAuth&&window.BPlusAuth.get();
+  if(local&&Number(local.user?.ruolo)!==3){
+   window.BPlusAuth.clear();location.replace('./index.html?login=cloud-required');return false;
+  }
   if(localStorage.getItem('bplus_cloud_required')==='1'){
    if(window.BPlusAuth)window.BPlusAuth.clear();
    location.replace('./index.html?login=required');return false;
