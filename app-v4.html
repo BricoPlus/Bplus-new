@@ -24,7 +24,7 @@ window.addEventListener('error',function(e){
   box.textContent='Errore avvio B+ Gestionale\\n'+(e.message||'Errore JavaScript')+'\\n'+(e.filename||'')+':'+(e.lineno||'');
 });
 window.addEventListener('unhandledrejection',function(e){throw e.reason||new Error('Errore non gestito')});
-</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0"></script><script src="./auth-v3.js?build=20261002-login-v3"></script><script src="./cloud-v1.js?build=20261011-cloud3"></script><script>
+</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.0"></script><script src="./auth-v3.js?build=20261002-login-v3"></script><script src="./cloud-v1.js?build=20261011-cloud4"></script><script>
 'use strict';
 const auth=BPlusAuth.get();
 if(!auth||!auth.uid||!auth.user){location.replace('./index.html?login=required');throw new Error('login required')}
