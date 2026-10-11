@@ -22,27 +22,34 @@ async function profileFor(authUser){
  if(!location)throw new Error('Punto vendita non assegnato al profilo.');
  let e=null;
  if(access.employee_id){
-  const {data,error}=await client.from('employees').select('*').eq('id',access.employee_id).maybeSingle();
-  if(error)throw error;e=data;
-  if(!e)throw new Error('Dipendente collegato al profilo non trovato.');
+  const {data,error}=await client.rpc('bplus_get_app_state');
+  if(error)throw error;
+  e=(data?.employees||[]).find(x=>String(x.id)===String(access.employee_id));
+  if(!e)throw new Error('Dipendente collegato al profilo non presente nel punto vendita assegnato.');
  }
  const owner=access.role==='titolare';
+ const breakType=e?(e.pausaTipo||(e.break_type==='fixed'?'fissa':e.break_type==='flexible'?'flessibile':'flessibile')):'flessibile';
+ const fixedRest=e?(e.riposiFissi||e.fixed_rest_days||[]):[];
+ const compRest=e?(e.compensativi||e.sunday_comp_rest_days||[]):[];
+ const mobility=e?(e.mobilita||locations.filter(x=>(e.mobile_location_ids||[]).map(String).includes(String(x.id))).map(x=>x.code)):[];
  const user=owner?{
   id:2,nome:authUser.user_metadata?.first_name||'Titolare',cognome:authUser.user_metadata?.last_name||'',
   email:authUser.email||'',telefono:'',ruolo:3,negozio:location.code,capacitaGenerale:5,comp:{},
   contratto:'',ore:0,pausa:'flessibile',pausaTipo:'flessibile',oreRecuperoBase:0,mobilita:locations.map(x=>x.code),
   stato:'attivo',inTurni:false
  }:{
-  id:Number(e.id),nome:e.first_name||'',cognome:e.last_name||'',email:e.email||authUser.email||'',
-  telefono:e.phone||'',ruolo:roleNumber(access.role),negozio:location.code,capacitaGenerale:e.general_skill||1,
-  comp:{tintometro:e.tintometro?1:0,chiavi:e.keys_skill?1:0,muletto:e.forklift_skill?1:0,cassa:e.cash_skill?1:0,taglio:e.wood_cut_skill?1:0,kasanova:e.kasanova_skill?1:0},
-  contratto:e.contract_type||'',ore:Number(e.weekly_hours||0),pausa:e.break_type==='fixed'?'fissa':'flessibile',
-  pausaTipo:e.break_type==='fixed'?'fissa':'flessibile',pausaInizio:e.break_start||'',pausaFine:e.break_end||'',
-  pausaMin:Number(e.break_minutes||0),policyDomeniche:mapSunday(e.sunday_policy),oreRecuperoBase:Number(e.recovery_hours||0),
-  uscita18:!!e.exit_18_enabled,riposiFissi:(e.fixed_rest_days||[]).map(String),
-  compensativi:(e.sunday_comp_rest_days||[]).map(String),
-  mobilita:locations.filter(x=>(e.mobile_location_ids||[]).map(String).includes(String(x.id))).map(x=>x.code),
-  stato:mapStatus(e.employment_status),inTurni:!!e.include_in_shifts
+  id:Number(e.id),nome:e.nome||e.first_name||'',cognome:e.cognome||e.last_name||'',email:e.email||authUser.email||'',
+  telefono:e.telefono||e.phone||'',ruolo:roleNumber(access.role),negozio:e.negozio||location.code,
+  capacitaGenerale:Number(e.capacitaGenerale??e.general_skill??1),
+  comp:{tintometro:(e.comp?.tintometro??(e.tintometro?1:0))?1:0,chiavi:(e.comp?.chiavi??(e.keys_skill?1:0))?1:0,
+   muletto:(e.comp?.muletto??(e.forklift_skill?1:0))?1:0,cassa:(e.comp?.cassa??(e.cash_skill?1:0))?1:0,
+   taglio:(e.comp?.taglio??(e.wood_cut_skill?1:0))?1:0,kasanova:(e.comp?.kasanova??(e.kasanova_skill?1:0))?1:0},
+  contratto:e.contratto||e.contract_type||'',ore:Number(e.ore??e.weekly_hours??0),pausa:breakType,pausaTipo:breakType,
+  pausaInizio:e.pausaInizio||e.break_start||'',pausaFine:e.pausaFine||e.break_end||'',
+  pausaMin:Number(e.pausaMin??e.break_minutes??0),policyDomeniche:e.policyDomeniche||mapSunday(e.sunday_policy),
+  oreRecuperoBase:Number(e.oreRecuperoBase??e.recovery_hours??0),uscita18:!!(e.uscita18??e.exit_18_enabled),
+  riposiFissi:fixedRest.map(String),compensativi:compRest.map(String),mobilita,
+  stato:e.stato||mapStatus(e.employment_status),inTurni:!!(e.inTurni??e.include_in_shifts)
  };
  return {user,access,location,authUser};
 }
