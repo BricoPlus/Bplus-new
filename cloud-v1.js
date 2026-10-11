@@ -104,6 +104,22 @@ function scheduleSave(payload){
  if(timer)clearTimeout(timer);
  timer=setTimeout(flush,900);
 }
+async function inviteEmployee(employeeId){
+ if(!ready)throw new Error('Accedi online come titolare prima di creare un account.');
+ if(timer){clearTimeout(timer);timer=null}
+ if(pending)await flush();
+ const {data,error}=await client.functions.invoke('bplus-invite-user',{body:{employee_id:String(employeeId)}});
+ if(error)throw error;
+ if(!data?.ok)throw new Error(data?.error||'Invito non riuscito');
+ return data;
+}
+async function sendMagicLink(email){
+ const value=String(email||'').trim().toLowerCase();
+ if(!value)throw new Error('Inserisci un indirizzo email.');
+ const {error}=await client.auth.signInWithOtp({email:value,options:{shouldCreateUser:false,emailRedirectTo:'https://bricoplus.github.io/Bplus-new/index.html'}});
+ if(error)throw error;
+ return true;
+}
 async function signOut(){ready=false;pending=null;if(timer)clearTimeout(timer);try{await client.auth.signOut()}catch(e){}localStorage.removeItem('bplus_cloud_required')}
 function gate(show,message){
  const el=document.getElementById('bplusCloudGate');
@@ -141,5 +157,5 @@ async function initialize(callbacks){
  notify('Collegato a Supabase · dati online attivi','ok');
  return true;
 }
-window.BPlusCloud={client,signIn,currentProfile,loadState,scheduleSave,signOut,initialize,isReady:()=>ready};
+window.BPlusCloud={client,signIn,currentProfile,sendMagicLink,inviteEmployee,loadState,scheduleSave,signOut,initialize,isReady:()=>ready};
 })();
