@@ -116,7 +116,7 @@ async function inviteEmployee(employeeId){
 async function sendMagicLink(email){
  const value=String(email||'').trim().toLowerCase();
  if(!value)throw new Error('Inserisci un indirizzo email.');
- const {error}=await client.auth.signInWithOtp({email:value,options:{shouldCreateUser:false,emailRedirectTo:'https://bricoplus.github.io/Bplus-new/index.html'}});
+ const {error}=await client.auth.signInWithOtp({email:value,options:{shouldCreateUser:false,emailRedirectTo:'https://bricoplus.github.io/Bplus-new/'}});
  if(error)throw error;
  return true;
 }
