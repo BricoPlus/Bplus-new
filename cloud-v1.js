@@ -7,9 +7,9 @@ const client=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,aut
 let ready=false,pending=null,timer=null,saving=false,lastCallbacks=null;
 function setConnectionStatus(state,detail){
  const el=document.getElementById('bplusConnectionIndicator');if(!el)return;
- const labels={connecting:'Connessione…',online:'Supabase online',syncing:'Sincronizzazione…',offline:'Offline · non sincronizzato',local:'Modalità locale'};
+ const labels={connecting:'Online…',online:'Online',syncing:'Sincronizzazione',offline:'Offline',local:'Offline'};
  el.dataset.state=state;el.textContent=detail||labels[state]||'Stato sconosciuto';
- el.title=state==='online'?'Connesso a Supabase; dati online attivi':state==='syncing'?'Invio delle modifiche a Supabase':state==='offline'?'Connessione non disponibile: le modifiche potrebbero non essere sincronizzate':state==='local'?'Le modifiche restano sul dispositivo e non sono sincronizzate online':'Verifica della connessione a Supabase';
+ el.title=state==='online'?'Connesso a Supabase; dati online attivi':state==='syncing'?'Invio delle modifiche a Supabase':state==='offline'||state==='local'?'Connessione non disponibile: le modifiche potrebbero non essere sincronizzate':'Verifica della connessione a Supabase';
 }
 function notify(message,kind){
  let el=document.getElementById('bplusCloudStatus');
