@@ -5,6 +5,12 @@ const URL='https://ystiqoorxohqgrwefmgv.supabase.co';
 const KEY='sb_publishable_Fcs5BU8QxytiUkfpe8Ii-A_UVlOulz_';
 const client=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 let ready=false,pending=null,timer=null,saving=false,lastCallbacks=null;
+function setConnectionStatus(state,detail){
+ const el=document.getElementById('bplusConnectionIndicator');if(!el)return;
+ const labels={connecting:'Connessione…',online:'Supabase online',syncing:'Sincronizzazione…',offline:'Offline · non sincronizzato',local:'Modalità locale'};
+ el.dataset.state=state;el.textContent=detail||labels[state]||'Stato sconosciuto';
+ el.title=state==='online'?'Connesso a Supabase; dati online attivi':state==='syncing'?'Invio delle modifiche a Supabase':state==='offline'?'Connessione non disponibile: le modifiche potrebbero non essere sincronizzate':state==='local'?'Le modifiche restano sul dispositivo e non sono sincronizzate online':'Verifica della connessione a Supabase';
+}
 function notify(message,kind){
  let el=document.getElementById('bplusCloudStatus');
  if(!el){el=document.createElement('div');el.id='bplusCloudStatus';el.style.cssText='position:fixed;right:14px;bottom:14px;z-index:100001;max-width:min(420px,calc(100vw - 28px));padding:10px 14px;border-radius:10px;background:#24262b;color:#fff;border:1px solid #454952;box-shadow:0 4px 18px #0008;font:600 13px/1.4 system-ui,sans-serif';document.body.appendChild(el)}
@@ -84,14 +90,14 @@ async function loadState(){
 }
 async function flush(){
  if(!ready||!pending||saving)return;
- saving=true;const payload=pending;pending=null;
+ saving=true;const payload=pending;pending=null;setConnectionStatus('syncing');
  try{
   const {error}=await client.rpc('bplus_save_app_state',{p_payload:payload});
   if(error)throw error;
-  notify('Sincronizzazione cloud completata','ok');
+  setConnectionStatus('online');notify('Sincronizzazione cloud completata','ok');
  }catch(e){
   pending=payload;
-  notify('Sincronizzazione non riuscita: '+(e.message||'errore di rete')+'. Riprovo automaticamente.','error');
+  setConnectionStatus('offline');notify('Sincronizzazione non riuscita: '+(e.message||'errore di rete')+'. Riprovo automaticamente.','error');
   timer=setTimeout(flush,5000);
  }finally{
   saving=false;
@@ -128,7 +134,7 @@ function gate(show,message){
  el.hidden=!show;
 }
 async function initialize(callbacks){
- lastCallbacks=callbacks;
+ lastCallbacks=callbacks;setConnectionStatus('connecting');
  const {data,error}=await client.auth.getSession();
  if(error)throw error;
  const session=data?.session;
@@ -141,7 +147,7 @@ async function initialize(callbacks){
    if(window.BPlusAuth)window.BPlusAuth.clear();
    location.replace('./index.html?login=required');return false;
   }
-  gate(false);notify('Modalità locale: le modifiche non sono sincronizzate online.','error');return false;
+  gate(false);setConnectionStatus('local');notify('Modalità locale: le modifiche non sono sincronizzate online.','error');return false;
  }
  gate(true,'Connessione sicura a Supabase…');
  const {data:authData,error:userError}=await client.auth.getUser();
@@ -156,10 +162,13 @@ async function initialize(callbacks){
  callbacks.setDb(state);
  localStorage.setItem('bplus_new_v4',JSON.stringify(state));
  ready=true;
+ setConnectionStatus('online');
  callbacks.render();
  gate(false);
  notify('Collegato a Supabase · dati online attivi','ok');
  return true;
 }
-window.BPlusCloud={client,signIn,currentProfile,sendMagicLink,inviteEmployee,loadState,scheduleSave,signOut,initialize,isReady:()=>ready};
+window.addEventListener('offline',()=>setConnectionStatus('offline'));
+window.addEventListener('online',()=>{if(ready){setConnectionStatus('syncing');if(pending&&!timer)timer=setTimeout(flush,100)}});
+window.BPlusCloud={client,signIn,currentProfile,sendMagicLink,inviteEmployee,loadState,scheduleSave,signOut,initialize,isReady:()=>ready,setConnectionStatus};
 })();
