@@ -169,6 +169,6 @@ async function initialize(callbacks){
  return true;
 }
 window.addEventListener('offline',()=>setConnectionStatus('offline'));
-window.addEventListener('online',()=>{if(ready){setConnectionStatus('syncing');if(pending&&!timer)timer=setTimeout(flush,100)}});
+window.addEventListener('online',()=>{if(ready){if(pending){setConnectionStatus('syncing');if(!timer)timer=setTimeout(flush,100)}else setConnectionStatus('online')}});
 window.BPlusCloud={client,signIn,currentProfile,sendMagicLink,inviteEmployee,loadState,scheduleSave,signOut,initialize,isReady:()=>ready,setConnectionStatus};
 })();
